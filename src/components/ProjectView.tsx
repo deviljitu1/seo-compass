@@ -4,6 +4,7 @@ import { useSEOStore } from '@/stores/seoStore';
 import { SEOScoreCircle } from '@/components/SEOScoreCircle';
 import { TaskCard } from '@/components/TaskCard';
 import { TimelineView } from '@/components/TimelineView';
+import { SEOChatbot } from '@/components/SEOChatbot';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Settings, FileText, PenTool, ExternalLink, MapPin, BarChart3, Clock, ArrowLeft, LayoutDashboard } from 'lucide-react';
@@ -27,7 +28,13 @@ type ViewMode = 'dashboard' | 'timeline' | SEOCategory;
 
 export function ProjectView({ project, onBack }: ProjectViewProps) {
   const [activeView, setActiveView] = useState<ViewMode>('dashboard');
-  const { getProjectTasks, getProjectHistory, getProjectScore, getStats, updateTask } = useSEOStore();
+  const { getProjectTasks, getProjectHistory, getProjectScore, getStats, updateTask, tasks: allTasks, history: allHistory } = useSEOStore();
+
+  const projectTasks = allTasks.filter(t => t.projectId === project.id);
+  const projectHistory = allHistory.filter(h => {
+    const task = allTasks.find(t => t.id === h.taskId);
+    return task?.projectId === project.id;
+  });
 
   const score = getProjectScore(project.id);
   const stats = getStats(project.id);
@@ -197,6 +204,13 @@ export function ProjectView({ project, onBack }: ProjectViewProps) {
           {renderContent()}
         </main>
       </div>
+
+      <SEOChatbot
+        project={project}
+        tasks={projectTasks}
+        history={projectHistory}
+        score={score}
+      />
     </div>
   );
 }
