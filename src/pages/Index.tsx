@@ -52,7 +52,7 @@ const Index = () => {
             </div>
             <h2 className="text-2xl font-bold text-foreground mb-2">Welcome to SEO Command Center</h2>
             <p className="text-muted-foreground text-center max-w-md mb-8">
-              Create your first SEO project to get started with 40+ predefined professional tasks across 6 categories.
+              Create your first SEO project to get started with 60+ predefined professional tasks across 6 categories.
             </p>
             <CreateProjectDialog onCreateProject={store.createProject} />
           </motion.div>
