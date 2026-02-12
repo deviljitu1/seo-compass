@@ -8,6 +8,7 @@ import { SEOChatbot } from '@/components/SEOChatbot';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { SEOReportExport } from '@/components/SEOReportExport';
 import { Settings, FileText, PenTool, ExternalLink, MapPin, BarChart3, Clock, ArrowLeft, LayoutDashboard, Filter, AlertTriangle } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
@@ -224,6 +225,7 @@ export function ProjectView({ project, onBack }: ProjectViewProps) {
             <h1 className="text-sm font-bold text-foreground truncate">{project.name}</h1>
             <p className="text-xs text-muted-foreground">{project.domain}</p>
           </div>
+          <SEOReportExport project={project} tasks={projectTasks} history={projectHistory} score={score} />
           <Badge variant="outline" className="hidden sm:flex">{project.industry || 'General'}</Badge>
         </div>
       </header>
