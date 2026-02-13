@@ -1,11 +1,12 @@
-import { useState } from 'react';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { useState, useEffect } from 'react';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Plus } from 'lucide-react';
 
 interface CreateProjectDialogProps {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
   onCreateProject: (project: {
     name: string;
     domain: string;
@@ -15,8 +16,7 @@ interface CreateProjectDialogProps {
   }) => string | Promise<string>;
 }
 
-export function CreateProjectDialog({ onCreateProject }: CreateProjectDialogProps) {
-  const [open, setOpen] = useState(false);
+export function CreateProjectDialog({ open, onOpenChange, onCreateProject }: CreateProjectDialogProps) {
   const [form, setForm] = useState({
     name: '',
     domain: '',
@@ -25,22 +25,28 @@ export function CreateProjectDialog({ onCreateProject }: CreateProjectDialogProp
     industry: '',
   });
 
+  // Reset form when dialog opens
+  useEffect(() => {
+    if (open) {
+      setForm({
+        name: '',
+        domain: '',
+        startDate: new Date().toISOString().split('T')[0],
+        clientName: '',
+        industry: '',
+      });
+    }
+  }, [open]);
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!form.name || !form.domain) return;
     onCreateProject(form);
-    setForm({ name: '', domain: '', startDate: new Date().toISOString().split('T')[0], clientName: '', industry: '' });
-    setOpen(false);
+    onOpenChange(false);
   };
 
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger asChild>
-        <Button className="gap-2">
-          <Plus className="h-4 w-4" />
-          New Project
-        </Button>
-      </DialogTrigger>
+    <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
           <DialogTitle>Create SEO Project</DialogTitle>
