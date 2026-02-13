@@ -11,6 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { SEOReportExport } from '@/components/SEOReportExport';
 import { Settings, FileText, PenTool, ExternalLink, MapPin, BarChart3, Clock, ArrowLeft, LayoutDashboard, Filter, AlertTriangle } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { ExportReportDialog } from '@/components/ExportReportDialog';
 
 const iconMap: Record<string, React.ReactNode> = {
   Settings: <Settings className="h-4 w-4" />,
@@ -227,12 +228,14 @@ export function ProjectView({ project, onBack }: ProjectViewProps) {
           </div>
           <SEOReportExport project={project} tasks={projectTasks} history={projectHistory} score={score} />
           <Badge variant="outline" className="hidden sm:flex">{project.industry || 'General'}</Badge>
+          <ExportReportDialog project={project} />
         </div>
       </header>
 
       <div className="max-w-[1600px] mx-auto flex">
         {/* Sidebar */}
         <aside className="hidden md:block w-56 lg:w-64 border-r border-border/50 min-h-[calc(100vh-3.5rem)] p-3 space-y-1 sticky top-14 self-start">
+<<<<<<< Updated upstream
           {navItems.map(item => {
             const isCategory = item.id !== 'dashboard' && item.id !== 'timeline';
             const catTasks = isCategory ? getProjectTasks(project.id, item.id as SEOCategory) : [];
@@ -256,6 +259,21 @@ export function ProjectView({ project, onBack }: ProjectViewProps) {
               </button>
             );
           })}
+=======
+          {navItems.map(item => (
+            <button
+              key={item.id}
+              onClick={() => setActiveView(item.id)}
+              className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition-all ${activeView === item.id
+                  ? 'bg-primary/10 text-primary font-medium'
+                  : 'text-muted-foreground hover:text-foreground hover:bg-secondary/50'
+                }`}
+            >
+              {item.icon}
+              {item.label}
+            </button>
+          ))}
+>>>>>>> Stashed changes
         </aside>
 
         {/* Mobile nav */}
@@ -264,12 +282,17 @@ export function ProjectView({ project, onBack }: ProjectViewProps) {
             {navItems.map(item => (
               <button
                 key={item.id}
+<<<<<<< Updated upstream
                 onClick={() => { setActiveView(item.id); setFilterImpact('all'); setFilterStatus('all'); }}
                 className={`flex items-center gap-2 px-3 py-2 rounded-lg text-xs whitespace-nowrap transition-all ${
                   activeView === item.id
+=======
+                onClick={() => setActiveView(item.id)}
+                className={`flex items-center gap-2 px-3 py-2 rounded-lg text-xs whitespace-nowrap transition-all ${activeView === item.id
+>>>>>>> Stashed changes
                     ? 'bg-primary/10 text-primary font-medium'
                     : 'text-muted-foreground'
-                }`}
+                  }`}
               >
                 {item.icon}
                 {item.label}
