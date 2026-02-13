@@ -1,9 +1,9 @@
 
 import { useState } from "react";
-import { format, isSameDay, isWithinInterval, startOfDay, endOfDay } from "date-fns";
-import { Download, Calendar as CalendarIcon } from "lucide-react";
+import { format, isSameDay, isWithinInterval, startOfDay, endOfDay, subDays, startOfMonth, endOfMonth } from "date-fns";
+import { Download, Calendar as CalendarIcon, Filter } from "lucide-react";
 import { useSEOStore } from "@/stores/seoStore";
-import { SEOProject } from "@/types/seo";
+import { SEOProject, TaskStatus, SEOCategory, CATEGORIES } from "@/types/seo";
 import { Button } from "@/components/ui/button";
 import { Calendar } from "@/components/ui/calendar";
 import {
@@ -22,6 +22,13 @@ import {
     PopoverContent,
     PopoverTrigger,
 } from "@/components/ui/popover";
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from "@/components/ui/select";
 import { cn } from "@/lib/utils";
 import { DateRange } from "react-day-picker";
 
@@ -29,37 +36,78 @@ interface ExportReportDialogProps {
     project: SEOProject;
 }
 
+type PeriodType = "today" | "yesterday" | "last7" | "last30" | "thisMonth" | "allTime" | "custom";
+
 export function ExportReportDialog({ project }: ExportReportDialogProps) {
     const [open, setOpen] = useState(false);
-    const [exportType, setExportType] = useState<"today" | "custom">("today");
+    const [period, setPeriod] = useState<PeriodType>("today");
     const [date, setDate] = useState<DateRange | undefined>({
         from: new Date(),
         to: new Date(),
     });
-    const { getProjectHistory } = useSEOStore();
+    const [statusFilter, setStatusFilter] = useState<TaskStatus | "all">("all");
+    const [categoryFilter, setCategoryFilter] = useState<SEOCategory | "all">("all");
+
+    const { getProjectHistory, tasks } = useSEOStore();
+
+    const handlePeriodChange = (value: PeriodType) => {
+        setPeriod(value);
+        const today = new Date();
+
+        switch (value) {
+            case "today":
+                setDate({ from: today, to: today });
+                break;
+            case "yesterday":
+                const yest = subDays(today, 1);
+                setDate({ from: yest, to: yest });
+                break;
+            case "last7":
+                setDate({ from: subDays(today, 6), to: today });
+                break;
+            case "last30":
+                setDate({ from: subDays(today, 29), to: today });
+                break;
+            case "thisMonth":
+                setDate({ from: startOfMonth(today), to: endOfMonth(today) });
+                break;
+            case "allTime":
+                setDate(undefined);
+                break;
+            case "custom":
+                // Keep existing selection or default to today
+                if (!date?.from) setDate({ from: today, to: today });
+                break;
+        }
+    };
 
     const handleExport = () => {
         const history = getProjectHistory(project.id);
-        const today = new Date();
 
         const filteredHistory = history.filter((h) => {
-            const changeDate = new Date(h.changeDate);
-
-            if (exportType === "today") {
-                return isSameDay(changeDate, today);
-            } else if (date?.from) {
+            // Date Filter
+            if (period !== "allTime") {
+                if (!date?.from) return false;
+                const changeDate = new Date(h.changeDate);
                 const from = startOfDay(date.from);
                 const to = date.to ? endOfDay(date.to) : endOfDay(date.from);
-                return isWithinInterval(changeDate, { start: from, end: to });
+                if (!isWithinInterval(changeDate, { start: from, end: to })) return false;
             }
-            return false;
+
+            // Status Filter
+            if (statusFilter !== "all" && h.newStatus !== statusFilter) {
+                return false;
+            }
+
+            // Category Filter
+            if (categoryFilter !== "all" && h.category !== categoryFilter) {
+                return false;
+            }
+
+            return true;
         });
 
-        if (filteredHistory.length === 0) {
-            // Still export headers if empty, or maybe show a toast
-            // Usually users prefer getting an empty file over nothing if they clicked download.
-        }
-
+        // Generate CSV
         const headers = [
             "Date",
             "Task ID",
@@ -105,12 +153,15 @@ export function ExportReportDialog({ project }: ExportReportDialogProps) {
         link.setAttribute("href", encodedUri);
 
         let filename = `${project.name.replace(/\s+/g, "_")}_report`;
-        if (exportType === "today") {
-            filename += `_${format(today, "yyyy-MM-dd")}`;
-        } else if (date?.from) {
+        if (period !== "allTime" && date?.from) {
             filename += `_${format(date.from, "yyyy-MM-dd")}`;
-            if (date.to) filename += `_to_${format(date.to, "yyyy-MM-dd")}`;
+            if (date.to && !isSameDay(date.from, date.to)) {
+                filename += `_to_${format(date.to, "yyyy-MM-dd")}`;
+            }
+        } else if (period === "allTime") {
+            filename += "_all_time";
         }
+
         filename += ".csv";
 
         link.setAttribute("download", filename);
@@ -128,78 +179,125 @@ export function ExportReportDialog({ project }: ExportReportDialogProps) {
                     <span className="hidden sm:inline">Export Report</span>
                 </Button>
             </DialogTrigger>
-            <DialogContent className="sm:max-w-[425px]">
+            <DialogContent className="sm:max-w-[500px]">
                 <DialogHeader>
                     <DialogTitle>Export Project Report</DialogTitle>
                     <DialogDescription>
-                        Download a CSV report of project activity and status changes.
+                        Generate a custom CSV report of project activity.
                     </DialogDescription>
                 </DialogHeader>
-                <div className="grid gap-6 py-4">
-                    <RadioGroup
-                        value={exportType}
-                        onValueChange={(v) => setExportType(v as "today" | "custom")}
-                        className="flex flex-col space-y-3"
-                    >
-                        <div className="flex items-center space-x-3 space-y-0">
-                            <RadioGroupItem value="today" id="today" />
-                            <Label htmlFor="today" className="font-normal cursor-pointer">
-                                Today's Report
-                            </Label>
-                        </div>
-                        <div className="flex items-center space-x-3 space-y-0">
-                            <RadioGroupItem value="custom" id="custom" />
-                            <Label htmlFor="custom" className="font-normal cursor-pointer">
-                                Date Range Report
-                            </Label>
-                        </div>
-                    </RadioGroup>
 
-                    {exportType === "custom" && (
-                        <div className="grid gap-2 animate-in fade-in slide-in-from-top-1 duration-200">
-                            <Label>Select Date Range</Label>
-                            <Popover>
-                                <PopoverTrigger asChild>
-                                    <Button
-                                        id="date"
-                                        variant={"outline"}
-                                        className={cn(
-                                            "w-full justify-start text-left font-normal",
-                                            !date && "text-muted-foreground"
-                                        )}
-                                    >
-                                        <CalendarIcon className="mr-2 h-4 w-4" />
-                                        {date?.from ? (
-                                            date.to ? (
-                                                <>
-                                                    {format(date.from, "LLL dd, y")} -{" "}
-                                                    {format(date.to, "LLL dd, y")}
-                                                </>
-                                            ) : (
-                                                format(date.from, "LLL dd, y")
-                                            )
-                                        ) : (
-                                            <span>Pick a date</span>
-                                        )}
-                                    </Button>
-                                </PopoverTrigger>
-                                <PopoverContent className="w-auto p-0" align="start">
-                                    <Calendar
-                                        initialFocus
-                                        mode="range"
-                                        defaultMonth={date?.from}
-                                        selected={date}
-                                        onSelect={setDate}
-                                        numberOfMonths={2}
-                                    />
-                                </PopoverContent>
-                            </Popover>
+                <div className="grid gap-6 py-4">
+                    {/* Date Range Selection */}
+                    <div className="space-y-3">
+                        <Label>Time Period</Label>
+                        <div className="flex flex-wrap gap-2">
+                            {[
+                                { id: "today", label: "Today" },
+                                { id: "yesterday", label: "Yesterday" },
+                                { id: "last7", label: "Last 7 Days" },
+                                { id: "thisMonth", label: "This Month" },
+                                { id: "allTime", label: "All Time" },
+                                { id: "custom", label: "Custom Range" },
+                            ].map((p) => (
+                                <Button
+                                    key={p.id}
+                                    variant={period === p.id ? "default" : "outline"}
+                                    size="sm"
+                                    onClick={() => handlePeriodChange(p.id as PeriodType)}
+                                    className="h-8"
+                                >
+                                    {p.label}
+                                </Button>
+                            ))}
                         </div>
-                    )}
+
+                        {period === "custom" && (
+                            <div className="mt-2 animate-in fade-in slide-in-from-top-1">
+                                <Popover>
+                                    <PopoverTrigger asChild>
+                                        <Button
+                                            id="date"
+                                            variant={"outline"}
+                                            className={cn(
+                                                "w-full justify-start text-left font-normal",
+                                                !date && "text-muted-foreground"
+                                            )}
+                                        >
+                                            <CalendarIcon className="mr-2 h-4 w-4" />
+                                            {date?.from ? (
+                                                date.to ? (
+                                                    <>
+                                                        {format(date.from, "LLL dd, y")} -{" "}
+                                                        {format(date.to, "LLL dd, y")}
+                                                    </>
+                                                ) : (
+                                                    format(date.from, "LLL dd, y")
+                                                )
+                                            ) : (
+                                                <span>Pick a date</span>
+                                            )}
+                                        </Button>
+                                    </PopoverTrigger>
+                                    <PopoverContent className="w-auto p-0" align="start">
+                                        <Calendar
+                                            initialFocus
+                                            mode="range"
+                                            defaultMonth={date?.from}
+                                            selected={date}
+                                            onSelect={setDate}
+                                            numberOfMonths={2}
+                                        />
+                                    </PopoverContent>
+                                </Popover>
+                            </div>
+                        )}
+                    </div>
+
+                    {/* Filters */}
+                    <div className="grid grid-cols-2 gap-4">
+                        <div className="space-y-2">
+                            <Label>Status Filter</Label>
+                            <Select
+                                value={statusFilter}
+                                onValueChange={(v) => setStatusFilter(v as TaskStatus | "all")}
+                            >
+                                <SelectTrigger>
+                                    <SelectValue placeholder="All Statuses" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="all">All Statuses</SelectItem>
+                                    <SelectItem value="done">Completed Only</SelectItem>
+                                    <SelectItem value="in-progress">In Progress</SelectItem>
+                                    <SelectItem value="not-started">Not Started</SelectItem>
+                                </SelectContent>
+                            </Select>
+                        </div>
+
+                        <div className="space-y-2">
+                            <Label>Category</Label>
+                            <Select
+                                value={categoryFilter}
+                                onValueChange={(v) => setCategoryFilter(v as SEOCategory | "all")}
+                            >
+                                <SelectTrigger>
+                                    <SelectValue placeholder="All Categories" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="all">All Categories</SelectItem>
+                                    {CATEGORIES.map(c => (
+                                        <SelectItem key={c.id} value={c.id}>{c.label}</SelectItem>
+                                    ))}
+                                </SelectContent>
+                            </Select>
+                        </div>
+                    </div>
                 </div>
+
                 <DialogFooter>
                     <Button onClick={handleExport} className="w-full sm:w-auto">
-                        Download CSV
+                        <Download className="mr-2 h-4 w-4" />
+                        Download Report
                     </Button>
                 </DialogFooter>
             </DialogContent>
