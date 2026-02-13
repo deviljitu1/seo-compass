@@ -14,7 +14,154 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      seo_projects: {
+        Row: {
+          client_name: string
+          created_at: string
+          domain: string
+          id: string
+          industry: string
+          name: string
+          start_date: string
+          user_id: string
+        }
+        Insert: {
+          client_name?: string
+          created_at?: string
+          domain: string
+          id?: string
+          industry?: string
+          name: string
+          start_date: string
+          user_id: string
+        }
+        Update: {
+          client_name?: string
+          created_at?: string
+          domain?: string
+          id?: string
+          industry?: string
+          name?: string
+          start_date?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      seo_tasks: {
+        Row: {
+          category: string
+          completion_date: string | null
+          created_at: string
+          description: string
+          execution_steps: Json
+          expected_impact: string
+          id: string
+          notes: string
+          priority: string
+          project_id: string
+          proof_url: string
+          status: string
+          time_spent_minutes: number
+          title: string
+          tools_required: Json
+          user_id: string
+          why_it_matters: string
+        }
+        Insert: {
+          category: string
+          completion_date?: string | null
+          created_at?: string
+          description?: string
+          execution_steps?: Json
+          expected_impact?: string
+          id?: string
+          notes?: string
+          priority?: string
+          project_id: string
+          proof_url?: string
+          status?: string
+          time_spent_minutes?: number
+          title: string
+          tools_required?: Json
+          user_id: string
+          why_it_matters?: string
+        }
+        Update: {
+          category?: string
+          completion_date?: string | null
+          created_at?: string
+          description?: string
+          execution_steps?: Json
+          expected_impact?: string
+          id?: string
+          notes?: string
+          priority?: string
+          project_id?: string
+          proof_url?: string
+          status?: string
+          time_spent_minutes?: number
+          title?: string
+          tools_required?: Json
+          user_id?: string
+          why_it_matters?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "seo_tasks_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "seo_projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      task_history: {
+        Row: {
+          category: string
+          change_date: string
+          changed_by: string
+          id: string
+          new_status: string
+          notes: string
+          old_status: string
+          task_id: string
+          task_title: string
+          user_id: string
+        }
+        Insert: {
+          category: string
+          change_date?: string
+          changed_by?: string
+          id?: string
+          new_status: string
+          notes?: string
+          old_status: string
+          task_id: string
+          task_title: string
+          user_id: string
+        }
+        Update: {
+          category?: string
+          change_date?: string
+          changed_by?: string
+          id?: string
+          new_status?: string
+          notes?: string
+          old_status?: string
+          task_id?: string
+          task_title?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "task_history_task_id_fkey"
+            columns: ["task_id"]
+            isOneToOne: false
+            referencedRelation: "seo_tasks"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
