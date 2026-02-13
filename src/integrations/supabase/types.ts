@@ -49,6 +49,7 @@ export type Database = {
       }
       seo_tasks: {
         Row: {
+          attachments: Json
           category: string
           completion_date: string | null
           created_at: string
@@ -68,6 +69,7 @@ export type Database = {
           why_it_matters: string
         }
         Insert: {
+          attachments?: Json
           category: string
           completion_date?: string | null
           created_at?: string
@@ -87,6 +89,7 @@ export type Database = {
           why_it_matters?: string
         }
         Update: {
+          attachments?: Json
           category?: string
           completion_date?: string | null
           created_at?: string
