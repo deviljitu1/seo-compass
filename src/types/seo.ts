@@ -26,6 +26,7 @@ export interface SEOTask {
   notes: string;
   proofUrl: string;
   timeSpentMinutes: number;
+  attachments: string[];
   createdAt: string;
 }
 

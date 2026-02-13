@@ -6,13 +6,16 @@ import { ProjectView } from '@/components/ProjectView';
 import { SEOScoreCircle } from '@/components/SEOScoreCircle';
 import { useState } from 'react';
 import { motion } from 'framer-motion';
-import { Globe, Calendar, Trash2, Search, LogOut, Loader2 } from 'lucide-react';
+import { Globe, Calendar, Trash2, Search, LogOut, LogIn, Loader2, Cloud, HardDrive } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
 import { format } from 'date-fns';
+import { useNavigate } from 'react-router-dom';
 
 const Index = () => {
   const store = useSEOStore();
-  const { signOut } = useAuth();
+  const { user, signOut } = useAuth();
+  const navigate = useNavigate();
   const [selectedProject, setSelectedProject] = useState<SEOProject | null>(null);
 
   if (store.loading) {
@@ -47,13 +50,46 @@ const Index = () => {
             </div>
           </div>
           <div className="flex items-center gap-2">
+            {store.isGuest ? (
+              <Badge variant="outline" className="gap-1.5 text-xs hidden sm:flex">
+                <HardDrive className="h-3 w-3" />
+                Local Mode
+              </Badge>
+            ) : (
+              <Badge variant="outline" className="gap-1.5 text-xs hidden sm:flex border-primary/30 text-primary">
+                <Cloud className="h-3 w-3" />
+                Cloud Synced
+              </Badge>
+            )}
             <CreateProjectDialog onCreateProject={store.createProject} />
-            <Button variant="ghost" size="sm" onClick={signOut} className="gap-2 text-muted-foreground hover:text-foreground">
-              <LogOut className="h-4 w-4" />
-            </Button>
+            {user ? (
+              <Button variant="ghost" size="sm" onClick={signOut} className="gap-2 text-muted-foreground hover:text-foreground">
+                <LogOut className="h-4 w-4" />
+                <span className="hidden sm:inline text-xs">Sign Out</span>
+              </Button>
+            ) : (
+              <Button variant="outline" size="sm" onClick={() => navigate('/auth')} className="gap-2">
+                <LogIn className="h-4 w-4" />
+                <span className="text-xs">Sign In</span>
+              </Button>
+            )}
           </div>
         </div>
       </header>
+
+      {/* Guest banner */}
+      {store.isGuest && (
+        <div className="bg-primary/5 border-b border-primary/10">
+          <div className="max-w-6xl mx-auto px-4 sm:px-6 py-2.5 flex items-center justify-between">
+            <p className="text-xs text-muted-foreground">
+              📋 You're in <strong>Guest Mode</strong> — data is saved locally on this device only.
+            </p>
+            <Button variant="link" size="sm" className="text-xs h-auto p-0" onClick={() => navigate('/auth')}>
+              Sign in to sync across devices →
+            </Button>
+          </div>
+        </div>
+      )}
 
       <main className="max-w-6xl mx-auto px-4 sm:px-6 py-8">
         {store.projects.length === 0 ? (

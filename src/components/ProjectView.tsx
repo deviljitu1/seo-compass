@@ -32,7 +32,7 @@ export function ProjectView({ project, onBack }: ProjectViewProps) {
   const [activeView, setActiveView] = useState<ViewMode>('dashboard');
   const [filterImpact, setFilterImpact] = useState<Impact | 'all'>('all');
   const [filterStatus, setFilterStatus] = useState<TaskStatus | 'all'>('all');
-  const { getProjectTasks, getProjectHistory, getProjectScore, getStats, updateTask, tasks: allTasks, history: allHistory } = useSEOStore();
+  const { getProjectTasks, getProjectHistory, getProjectScore, getStats, updateTask, uploadAttachment, deleteAttachment, tasks: allTasks, history: allHistory } = useSEOStore();
 
   const projectTasks = allTasks.filter(t => t.projectId === project.id);
   const projectHistory = allHistory.filter(h => {
@@ -129,7 +129,7 @@ export function ProjectView({ project, onBack }: ProjectViewProps) {
               </div>
               <div className="space-y-2">
                 {highPriorityPending.map(task => (
-                  <TaskCard key={task.id} task={task} onUpdate={updateTask} />
+                  <TaskCard key={task.id} task={task} onUpdate={updateTask} onUploadAttachment={uploadAttachment} onDeleteAttachment={deleteAttachment} />
                 ))}
               </div>
             </div>
@@ -203,7 +203,7 @@ export function ProjectView({ project, onBack }: ProjectViewProps) {
         ) : (
           <AnimatePresence>
             {filteredTasks.map(task => (
-              <TaskCard key={task.id} task={task} onUpdate={updateTask} />
+              <TaskCard key={task.id} task={task} onUpdate={updateTask} onUploadAttachment={uploadAttachment} onDeleteAttachment={deleteAttachment} />
             ))}
           </AnimatePresence>
         )}

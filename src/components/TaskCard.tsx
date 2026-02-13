@@ -1,16 +1,18 @@
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { SEOTask, TaskStatus } from '@/types/seo';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { ChevronDown, ChevronUp, Clock, ExternalLink, AlertTriangle, CheckCircle2, Circle, Pause, SkipForward } from 'lucide-react';
+import { ChevronDown, ChevronUp, Clock, ExternalLink, AlertTriangle, CheckCircle2, Circle, Pause, SkipForward, Upload, ImageIcon, X, Loader2 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
 interface TaskCardProps {
   task: SEOTask;
   onUpdate: (taskId: string, updates: Partial<SEOTask>) => void;
+  onUploadAttachment?: (taskId: string, file: File) => Promise<string | null>;
+  onDeleteAttachment?: (taskId: string, url: string) => void;
 }
 
 const statusConfig: Record<TaskStatus, { label: string; icon: React.ReactNode; className: string }> = {
@@ -26,10 +28,22 @@ const impactConfig = {
   low: { label: 'Low Impact', className: 'bg-muted text-muted-foreground border-border' },
 };
 
-export function TaskCard({ task, onUpdate }: TaskCardProps) {
+export function TaskCard({ task, onUpdate, onUploadAttachment, onDeleteAttachment }: TaskCardProps) {
   const [expanded, setExpanded] = useState(false);
+  const [uploading, setUploading] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const status = statusConfig[task.status];
   const impact = impactConfig[task.expectedImpact];
+  const attachments = task.attachments || [];
+
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file || !onUploadAttachment) return;
+    setUploading(true);
+    await onUploadAttachment(task.id, file);
+    setUploading(false);
+    if (fileInputRef.current) fileInputRef.current.value = '';
+  };
 
   return (
     <motion.div
@@ -51,6 +65,12 @@ export function TaskCard({ task, onUpdate }: TaskCardProps) {
             {task.title}
           </h4>
         </div>
+        {attachments.length > 0 && (
+          <span className="flex items-center gap-1 text-xs text-primary">
+            <ImageIcon className="h-3 w-3" />
+            {attachments.length}
+          </span>
+        )}
         <Badge variant="outline" className={`text-xs ${impact.className}`}>
           {impact.label}
         </Badge>
@@ -148,6 +168,67 @@ export function TaskCard({ task, onUpdate }: TaskCardProps) {
                     </Button>
                   )}
                 </div>
+              </div>
+
+              {/* Attachments / Screenshots */}
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
+                    Screenshots & Attachments
+                  </label>
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    accept="image/*"
+                    className="hidden"
+                    onChange={handleFileUpload}
+                  />
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="h-7 gap-1.5 text-xs"
+                    onClick={() => fileInputRef.current?.click()}
+                    disabled={uploading}
+                  >
+                    {uploading ? <Loader2 className="h-3 w-3 animate-spin" /> : <Upload className="h-3 w-3" />}
+                    {uploading ? 'Uploading...' : 'Upload Image'}
+                  </Button>
+                </div>
+
+                {attachments.length > 0 && (
+                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                    {attachments.map((url, i) => (
+                      <div key={i} className="relative group rounded-lg overflow-hidden border border-border bg-secondary/30">
+                        <img
+                          src={url}
+                          alt={`Attachment ${i + 1}`}
+                          className="w-full h-24 object-cover cursor-pointer hover:opacity-90 transition-opacity"
+                          onClick={() => window.open(url, '_blank')}
+                        />
+                        {onDeleteAttachment && (
+                          <button
+                            onClick={(e) => { e.stopPropagation(); onDeleteAttachment(task.id, url); }}
+                            className="absolute top-1 right-1 w-5 h-5 rounded-full bg-destructive text-destructive-foreground flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+                          >
+                            <X className="h-3 w-3" />
+                          </button>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                {attachments.length === 0 && (
+                  <div
+                    className="border-2 border-dashed border-border rounded-lg p-4 text-center cursor-pointer hover:border-primary/30 hover:bg-primary/5 transition-all"
+                    onClick={() => fileInputRef.current?.click()}
+                  >
+                    <ImageIcon className="h-6 w-6 text-muted-foreground mx-auto mb-1" />
+                    <p className="text-xs text-muted-foreground">
+                      Click to upload screenshots, charts, or audit evidence
+                    </p>
+                  </div>
+                )}
               </div>
 
               <div className="space-y-1.5">
