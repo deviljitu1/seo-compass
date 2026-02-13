@@ -1,17 +1,27 @@
 import { SEOProject } from '@/types/seo';
 import { useSEOStore } from '@/stores/seoStore';
+import { useAuth } from '@/contexts/AuthContext';
 import { CreateProjectDialog } from '@/components/CreateProjectDialog';
 import { ProjectView } from '@/components/ProjectView';
 import { SEOScoreCircle } from '@/components/SEOScoreCircle';
 import { useState } from 'react';
 import { motion } from 'framer-motion';
-import { Globe, Calendar, Trash2, Search } from 'lucide-react';
+import { Globe, Calendar, Trash2, Search, LogOut, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { format } from 'date-fns';
 
 const Index = () => {
   const store = useSEOStore();
+  const { signOut } = useAuth();
   const [selectedProject, setSelectedProject] = useState<SEOProject | null>(null);
+
+  if (store.loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-background">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      </div>
+    );
+  }
 
   if (selectedProject) {
     const project = store.projects.find(p => p.id === selectedProject.id);
@@ -36,7 +46,12 @@ const Index = () => {
               <p className="text-xs text-muted-foreground">Professional SEO Operations Platform</p>
             </div>
           </div>
-          <CreateProjectDialog onCreateProject={store.createProject} />
+          <div className="flex items-center gap-2">
+            <CreateProjectDialog onCreateProject={store.createProject} />
+            <Button variant="ghost" size="sm" onClick={signOut} className="gap-2 text-muted-foreground hover:text-foreground">
+              <LogOut className="h-4 w-4" />
+            </Button>
+          </div>
         </div>
       </header>
 

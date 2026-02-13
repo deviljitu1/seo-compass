@@ -12,7 +12,7 @@ interface CreateProjectDialogProps {
     startDate: string;
     clientName: string;
     industry: string;
-  }) => string;
+  }) => string | Promise<string>;
 }
 
 export function CreateProjectDialog({ onCreateProject }: CreateProjectDialogProps) {
