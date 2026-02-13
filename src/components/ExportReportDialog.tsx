@@ -1,5 +1,5 @@
-
 import { useState } from "react";
+import { Checkbox } from "@/components/ui/checkbox";
 import { format, isSameDay, isWithinInterval, startOfDay, endOfDay, subDays, startOfMonth, endOfMonth } from "date-fns";
 import { Download, Calendar as CalendarIcon, Filter } from "lucide-react";
 import { useSEOStore } from "@/stores/seoStore";
@@ -48,6 +48,8 @@ export function ExportReportDialog({ project }: ExportReportDialogProps) {
     const [statusFilter, setStatusFilter] = useState<TaskStatus | "all">("all");
     const [categoryFilter, setCategoryFilter] = useState<SEOCategory | "all">("all");
 
+    const [groupByDate, setGroupByDate] = useState(false);
+
     const { getProjectHistory, tasks } = useSEOStore();
 
     const handlePeriodChange = (value: PeriodType) => {
@@ -84,7 +86,7 @@ export function ExportReportDialog({ project }: ExportReportDialogProps) {
     const handleExport = () => {
         const history = getProjectHistory(project.id);
 
-        const filteredHistory = history.filter((h) => {
+        let filteredHistory = history.filter((h) => {
             // Date Filter
             if (period !== "allTime") {
                 if (!date?.from) return false;
@@ -106,6 +108,9 @@ export function ExportReportDialog({ project }: ExportReportDialogProps) {
 
             return true;
         });
+
+        // Sort by date descending
+        filteredHistory.sort((a, b) => new Date(b.changeDate).getTime() - new Date(a.changeDate).getTime());
 
         // Generate CSV
         const headers = [
@@ -130,17 +135,30 @@ export function ExportReportDialog({ project }: ExportReportDialogProps) {
             return stringValue;
         };
 
-        const rows = filteredHistory.map((h) => [
-            format(new Date(h.changeDate), "yyyy-MM-dd HH:mm:ss"),
-            h.taskId,
-            h.taskTitle,
-            h.category,
-            "Status Update",
-            h.oldStatus,
-            h.newStatus,
-            h.changedBy,
-            escapeCsv(h.notes)
-        ]);
+        let rows: string[][] = [];
+        let lastDate = "";
+
+        filteredHistory.forEach((h) => {
+            const dateStr = format(new Date(h.changeDate), "yyyy-MM-dd");
+
+            if (groupByDate && dateStr !== lastDate) {
+                // Add separator row
+                rows.push([`--- ${dateStr} ---`, "", "", "", "", "", "", "", ""]);
+                lastDate = dateStr;
+            }
+
+            rows.push([
+                format(new Date(h.changeDate), "yyyy-MM-dd HH:mm:ss"),
+                h.taskId,
+                h.taskTitle,
+                h.category,
+                "Status Update",
+                h.oldStatus,
+                h.newStatus,
+                h.changedBy,
+                escapeCsv(h.notes)
+            ]);
+        });
 
         let csvContent = "data:text/csv;charset=utf-8,";
         csvContent += headers.join(",") + "\r\n";
@@ -202,10 +220,9 @@ export function ExportReportDialog({ project }: ExportReportDialogProps) {
                             ].map((p) => (
                                 <Button
                                     key={p.id}
-                                    variant={period === p.id ? "default" : "outline"}
                                     size="sm"
                                     onClick={() => handlePeriodChange(p.id as PeriodType)}
-                                    className="h-8"
+                                    className={`h-8 ${period === p.id ? "bg-primary text-primary-foreground hover:bg-primary/90" : "border border-input bg-background hover:bg-accent hover:text-accent-foreground"}`}
                                 >
                                     {p.label}
                                 </Button>
@@ -255,6 +272,15 @@ export function ExportReportDialog({ project }: ExportReportDialogProps) {
                     </div>
 
                     {/* Filters */}
+                    <div className="flex items-center space-x-2 pb-2">
+                        <Checkbox
+                            id="groupByDate"
+                            checked={groupByDate}
+                            onCheckedChange={(checked) => setGroupByDate(checked === true)}
+                        />
+                        <Label htmlFor="groupByDate">Group export by date</Label>
+                    </div>
+
                     <div className="grid grid-cols-2 gap-4">
                         <div className="space-y-2">
                             <Label>Status Filter</Label>
