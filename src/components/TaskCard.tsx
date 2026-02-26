@@ -48,20 +48,25 @@ export function TaskCard({ task, onUpdate, onUploadAttachment, onDeleteAttachmen
   return (
     <motion.div
       layout
-      className={`glass-card rounded-lg overflow-hidden transition-all ${
-        task.status === 'done' ? 'opacity-70' : ''
-      }`}
+      initial={{ opacity: 0, scale: 0.98 }}
+      animate={{ opacity: 1, scale: 1 }}
+      className={`glass-card rounded-xl overflow-hidden transition-all duration-300 relative group
+        ${task.status === 'done' ? 'opacity-70 border-l-4 border-l-success border-t-transparent border-r-transparent border-b-transparent hover:opacity-100' :
+          task.status === 'in-progress' ? 'border-l-4 border-l-info border-t-transparent border-r-transparent border-b-transparent shadow-[0_0_15px_-5px_hsl(var(--info))]' :
+            task.status === 'not-started' ? 'border-l-4 border-l-muted-foreground/30 border-t-transparent border-r-transparent border-b-transparent' :
+              'border-l-4 border-l-muted border-t-transparent border-r-transparent border-b-transparent'}
+        hover:shadow-md hover:border-primary/20 hover:translate-y-[-2px]`}
     >
       <div
-        className="flex items-center gap-3 p-4 cursor-pointer hover:bg-secondary/30 transition-colors"
+        className="flex items-center gap-3 p-4 cursor-pointer hover:bg-secondary/40 transition-colors"
         onClick={() => setExpanded(!expanded)}
       >
-        <div className={`flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium ${status.className}`}>
+        <div className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold shadow-inner ${status.className}`}>
           {status.icon}
           {status.label}
         </div>
-        <div className="flex-1 min-w-0">
-          <h4 className={`font-medium text-sm ${task.status === 'done' ? 'line-through text-muted-foreground' : 'text-foreground'}`}>
+        <div className="flex-1 min-w-0 pl-1">
+          <h4 className={`font-semibold text-[15px] ${task.status === 'done' ? 'line-through text-muted-foreground' : 'text-foreground group-hover:text-primary transition-colors'}`}>
             {task.title}
           </h4>
         </div>
@@ -92,10 +97,10 @@ export function TaskCard({ task, onUpdate, onUploadAttachment, onDeleteAttachmen
             transition={{ duration: 0.2 }}
             className="overflow-hidden"
           >
-            <div className="px-4 pb-4 space-y-4 border-t border-border/50 pt-4">
-              <p className="text-sm text-muted-foreground">{task.description}</p>
+            <div className="px-5 pb-5 space-y-5 border-t border-border/40 pt-5 bg-background/30 backdrop-blur-sm">
+              <p className="text-[15px] leading-relaxed text-muted-foreground">{task.description}</p>
 
-              <div className="bg-secondary/30 rounded-lg p-3">
+              <div className="bg-gradient-to-br from-warning/10 to-warning/5 border border-warning/20 rounded-xl p-4 shadow-inner">
                 <div className="flex items-center gap-2 mb-2">
                   <AlertTriangle className="h-4 w-4 text-warning" />
                   <span className="text-xs font-semibold text-warning uppercase tracking-wide">Why It Matters</span>

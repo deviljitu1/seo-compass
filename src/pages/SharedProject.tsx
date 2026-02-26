@@ -223,22 +223,41 @@ export default function SharedProjectPage() {
 
     if (loading) {
         return (
-            <div className="min-h-screen flex items-center justify-center bg-background">
-                <Loader2 className="h-8 w-8 animate-spin text-primary" />
+            <div className="min-h-screen flex items-center justify-center bg-background relative overflow-hidden">
+                <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-96 h-96 bg-primary/20 rounded-full blur-[100px] pointer-events-none" />
+                <motion.div
+                    initial={{ opacity: 0, scale: 0.9 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    className="flex flex-col items-center gap-4 z-10"
+                >
+                    <div className="w-16 h-16 rounded-2xl glass-card flex items-center justify-center shadow-[0_0_30px_hsl(var(--primary)/0.2)]">
+                        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                    </div>
+                </motion.div>
             </div>
         );
     }
 
     if (notFound || !project) {
         return (
-            <div className="min-h-screen flex flex-col items-center justify-center bg-background gap-4 px-4">
-                <div className="w-16 h-16 rounded-2xl bg-muted flex items-center justify-center">
-                    <Lock className="h-8 w-8 text-muted-foreground" />
-                </div>
-                <h1 className="text-xl font-bold text-foreground">Link Not Found</h1>
-                <p className="text-sm text-muted-foreground text-center max-w-sm">
-                    This share link is invalid or has been revoked by the project owner.
-                </p>
+            <div className="min-h-screen flex flex-col items-center justify-center bg-background gap-4 px-4 relative overflow-hidden">
+                <div className="absolute inset-0 bg-[linear-gradient(to_right,#80808012_1px,transparent_1px),linear-gradient(to_bottom,#80808012_1px,transparent_1px)] bg-[size:24px_24px]" />
+                <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[400px] bg-red-500/10 rounded-full blur-[120px] pointer-events-none" />
+
+                <motion.div
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.5 }}
+                    className="glass-card p-10 rounded-3xl flex flex-col items-center text-center max-w-lg z-10 border-border/40 shadow-2xl"
+                >
+                    <div className="w-20 h-20 rounded-2xl bg-muted/80 flex items-center justify-center mb-6 shadow-inner">
+                        <Lock className="h-10 w-10 text-muted-foreground" />
+                    </div>
+                    <h1 className="text-2xl font-bold text-foreground mb-2">Link Unavailable</h1>
+                    <p className="text-base text-muted-foreground">
+                        This share link is invalid or has been revoked by the project owner. If you believe this is a mistake, please reach out to the project administrator.
+                    </p>
+                </motion.div>
             </div>
         );
     }
@@ -393,36 +412,44 @@ export default function SharedProjectPage() {
     };
 
     return (
-        <div className="min-h-screen bg-background text-foreground">
+        <div className="min-h-screen bg-background text-foreground relative selection:bg-primary/20">
+            {/* Subtle background grid & glow */}
+            <div className="fixed inset-0 pointer-events-none bg-[radial-gradient(ellipse_at_top_right,_var(--tw-gradient-stops))] from-primary/5 via-background to-background z-0" />
+
             {/* Top bar */}
-            <header className="border-b border-border/50 bg-card/50 backdrop-blur-xl sticky top-0 z-50">
-                <div className="max-w-[1600px] mx-auto px-4 sm:px-6 h-14 flex items-center gap-4">
-                    <div className="w-7 h-7 rounded-lg gradient-primary flex items-center justify-center flex-shrink-0">
-                        <Search className="h-3.5 w-3.5 text-primary-foreground" />
+            <header className="border-b border-border/50 bg-background/60 backdrop-blur-2xl sticky top-0 z-50 transition-all duration-300">
+                <div className="max-w-[1600px] mx-auto px-4 sm:px-6 h-14 flex items-center justify-between gap-4">
+                    <div className="flex items-center gap-3 min-w-0">
+                        <div className="w-8 h-8 rounded-xl bg-gradient-to-tr from-primary to-primary/60 flex items-center justify-center flex-shrink-0 shadow-lg shadow-primary/20">
+                            <Search className="h-4 w-4 text-primary-foreground" />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                            <h1 className="text-sm font-bold text-foreground truncate">{project.name}</h1>
+                            <p className="text-xs text-muted-foreground truncate">{project.domain}</p>
+                        </div>
                     </div>
-                    <div className="flex-1 min-w-0">
-                        <h1 className="text-sm font-bold text-foreground truncate">{project.name}</h1>
-                        <p className="text-xs text-muted-foreground">{project.domain}</p>
+
+                    <div className="flex items-center gap-2">
+                        {accessLevel === 'editor' ? (
+                            <Badge variant="outline" className="hidden sm:flex border-warning/30 bg-warning/5 text-warning gap-1.5 shadow-sm">
+                                <ShieldAlert className="h-3 w-3" />
+                                Editor View
+                            </Badge>
+                        ) : (
+                            <Badge variant="outline" className="hidden sm:flex border-primary/30 bg-primary/5 text-primary gap-1.5 shadow-sm">
+                                <Lock className="h-3 w-3" />
+                                Read-Only View
+                            </Badge>
+                        )}
+                        {project.industry && (
+                            <Badge variant="secondary" className="hidden sm:flex shadow-sm bg-secondary/50">{project.industry}</Badge>
+                        )}
                     </div>
-                    {accessLevel === 'editor' ? (
-                        <Badge variant="outline" className="hidden sm:flex border-warning/30 text-warning gap-1.5">
-                            <ShieldAlert className="h-3 w-3" />
-                            Editor View
-                        </Badge>
-                    ) : (
-                        <Badge variant="outline" className="hidden sm:flex border-primary/30 text-primary gap-1.5">
-                            <Lock className="h-3 w-3" />
-                            Read-Only View
-                        </Badge>
-                    )}
-                    {project.industry && (
-                        <Badge variant="outline" className="hidden sm:flex">{project.industry}</Badge>
-                    )}
                 </div>
             </header>
 
-            <div className={`border-b ${accessLevel === 'editor' ? 'bg-warning/5 border-warning/10' : 'bg-primary/5 border-primary/10'}`}>
-                <div className="max-w-[1600px] mx-auto px-4 sm:px-6 py-2.5 flex items-center justify-between gap-2">
+            <div className={`relative z-10 border-b backdrop-blur-md ${accessLevel === 'editor' ? 'bg-warning/10 border-warning/20' : 'bg-primary/10 border-primary/20'}`}>
+                <div className="max-w-[1600px] mx-auto px-4 sm:px-6 py-3 flex items-center justify-between gap-2 overflow-x-auto">
                     <p className="text-xs text-muted-foreground flex items-center gap-1.5">
                         {accessLevel === 'editor' ? <ShieldAlert className="h-3 w-3 text-warning" /> : <Lock className="h-3 w-3" />}
                         You're viewing a shared project — <strong className="text-foreground">{accessLevel === 'editor' ? 'editor mode' : 'read-only'}</strong>.
@@ -435,9 +462,9 @@ export default function SharedProjectPage() {
                 </div>
             </div>
 
-            <div className="max-w-[1600px] mx-auto flex">
+            <div className="max-w-[1600px] mx-auto flex relative z-10">
                 {/* Sidebar */}
-                <aside className="hidden md:block w-56 lg:w-64 border-r border-border/50 min-h-[calc(100vh-5.5rem)] p-3 space-y-1 sticky top-14 self-start">
+                <aside className="hidden md:block w-56 lg:w-64 border-r border-border/40 min-h-[calc(100vh-6.5rem)] p-4 space-y-1.5 sticky top-[5.5rem] self-start bg-background/30 backdrop-blur-sm">
                     {navItems.map(item => {
                         const isCategory = item.id !== 'dashboard' && item.id !== 'timeline';
                         const catTasks = isCategory ? tasks.filter(t => t.category === item.id as SEOCategory) : [];
@@ -446,15 +473,27 @@ export default function SharedProjectPage() {
                             <button
                                 key={item.id}
                                 onClick={() => setActiveView(item.id)}
-                                className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition-all ${activeView === item.id
-                                    ? 'bg-primary/10 text-primary font-medium'
-                                    : 'text-muted-foreground hover:text-foreground hover:bg-secondary/50'
+                                className={`w-full flex items-center gap-3 px-3.5 py-3 rounded-xl text-sm font-medium transition-all duration-200 relative group overflow-hidden ${activeView === item.id
+                                        ? 'text-primary shadow-sm'
+                                        : 'text-muted-foreground hover:text-foreground hover:bg-muted/50'
                                     }`}
                             >
-                                {item.icon}
-                                <span className="flex-1 text-left">{item.label}</span>
+                                {activeView === item.id && (
+                                    <motion.div
+                                        layoutId="activeNavBackground"
+                                        className="absolute inset-0 bg-primary/10 rounded-xl"
+                                        initial={false}
+                                        transition={{ type: "spring", bounce: 0.2, duration: 0.6 }}
+                                    />
+                                )}
+                                <span className={`relative z-10 transition-colors ${activeView === item.id ? 'text-primary' : 'text-muted-foreground group-hover:text-foreground'}`}>
+                                    {item.icon}
+                                </span>
+                                <span className="relative z-10 flex-1 text-left">{item.label}</span>
                                 {isCategory && (
-                                    <span className="text-xs opacity-60">{catDone}/{catTasks.length}</span>
+                                    <span className="relative z-10 text-xs font-semibold bg-background/50 px-2 py-0.5 rounded-full border border-border/50 shadow-sm opacity-80 group-hover:opacity-100 transition-opacity">
+                                        {catDone}/{catTasks.length}
+                                    </span>
                                 )}
                             </button>
                         );
@@ -462,15 +501,15 @@ export default function SharedProjectPage() {
                 </aside>
 
                 {/* Mobile nav */}
-                <div className="md:hidden sticky top-[5.5rem] z-40 bg-background border-b border-border/50 overflow-x-auto w-full">
-                    <div className="flex gap-1 p-2">
+                <div className="md:hidden sticky top-[5.5rem] z-40 bg-background/80 backdrop-blur-xl border-b border-border/50 overflow-x-auto w-full flex scrollbar-hide">
+                    <div className="flex gap-2 p-3 min-w-max">
                         {navItems.map(item => (
                             <button
                                 key={item.id}
                                 onClick={() => setActiveView(item.id)}
-                                className={`flex items-center gap-2 px-3 py-2 rounded-lg text-xs whitespace-nowrap transition-all ${activeView === item.id
-                                    ? 'bg-primary/10 text-primary font-medium'
-                                    : 'text-muted-foreground'
+                                className={`flex items-center gap-2 px-4 py-2 rounded-full text-xs font-medium whitespace-nowrap transition-all shadow-sm border ${activeView === item.id
+                                        ? 'bg-primary text-primary-foreground border-primary'
+                                        : 'bg-card text-muted-foreground hover:bg-muted border-border/50'
                                     }`}
                             >
                                 {item.icon}
@@ -481,9 +520,15 @@ export default function SharedProjectPage() {
                 </div>
 
                 {/* Main content */}
-                <main className="flex-1 p-4 sm:p-6 lg:p-8 min-w-0">
+                <motion.main
+                    key={activeView}
+                    initial={{ opacity: 0, y: 10, filter: 'blur(4px)' }}
+                    animate={{ opacity: 1, y: 0, filter: 'blur(0px)' }}
+                    transition={{ duration: 0.3 }}
+                    className="flex-1 p-4 sm:p-6 lg:p-10 min-w-0 pb-20"
+                >
                     {renderContent()}
-                </main>
+                </motion.main>
             </div>
         </div>
     );
