@@ -5,8 +5,9 @@ import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
-import { Share2, Copy, Check, Loader2, Trash2, Link } from 'lucide-react';
+import { Share2, Copy, Check, Loader2, Trash2, Link, Shield } from 'lucide-react';
 import { toast } from 'sonner';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { motion, AnimatePresence } from 'framer-motion';
 
 interface ShareProjectDialogProps {
@@ -18,6 +19,7 @@ export function ShareProjectDialog({ project }: ShareProjectDialogProps) {
     const [open, setOpen] = useState(false);
     const [shareUrl, setShareUrl] = useState<string | null>(null);
     const [shareToken, setShareToken] = useState<string | null>(null);
+    const [accessLevel, setAccessLevel] = useState<'viewer' | 'editor'>('viewer');
     const [loading, setLoading] = useState(false);
     const [copied, setCopied] = useState(false);
 
@@ -28,7 +30,7 @@ export function ShareProjectDialog({ project }: ShareProjectDialogProps) {
             // Check if a share link already exists for this project
             const { data: existing } = await supabase
                 .from('share_links')
-                .select('token')
+                .select('token, access_level')
                 .eq('project_id', project.id)
                 .eq('user_id', user.id)
                 .maybeSingle();
@@ -37,11 +39,12 @@ export function ShareProjectDialog({ project }: ShareProjectDialogProps) {
                 const url = `${window.location.origin}/share/${existing.token}`;
                 setShareUrl(url);
                 setShareToken(existing.token);
+                setAccessLevel(existing.access_level as 'viewer' | 'editor' || 'viewer');
             } else {
                 // Create a new share link
                 const { data: created, error } = await supabase
                     .from('share_links')
-                    .insert({ project_id: project.id, user_id: user.id })
+                    .insert({ project_id: project.id, user_id: user.id, access_level: 'viewer' })
                     .select('token')
                     .single();
 
@@ -52,12 +55,33 @@ export function ShareProjectDialog({ project }: ShareProjectDialogProps) {
                 const url = `${window.location.origin}/share/${created.token}`;
                 setShareUrl(url);
                 setShareToken(created.token);
+                setAccessLevel('viewer');
             }
         } catch (err) {
             console.error(err);
             toast.error('Something went wrong.');
         } finally {
             setLoading(false);
+        }
+    };
+
+    const handleUpdateAccessLevel = async (level: 'viewer' | 'editor') => {
+        if (!shareToken || !user) return;
+        setAccessLevel(level);
+        try {
+            const { error } = await supabase
+                .from('share_links')
+                .update({ access_level: level })
+                .eq('project_id', project.id)
+                .eq('user_id', user.id);
+
+            if (error) throw error;
+            toast.success(`Access level updated to ${level}`);
+        } catch (err) {
+            console.error(err);
+            toast.error('Failed to update access level.');
+            // Revert on error
+            setAccessLevel(level === 'viewer' ? 'editor' : 'viewer');
         }
     };
 
@@ -117,14 +141,14 @@ export function ShareProjectDialog({ project }: ShareProjectDialogProps) {
                             Share Project
                         </DialogTitle>
                         <DialogDescription className="text-muted-foreground text-sm mt-1">
-                            Anyone with this link can view <strong className="text-foreground">{project.name}</strong> in read-only mode — no login required.
+                            Anyone with this link can {accessLevel === 'editor' ? 'modify tasks and view' : 'view'} <strong className="text-foreground">{project.name}</strong> without logging in.
                         </DialogDescription>
                     </DialogHeader>
 
                     <div className="space-y-4 mt-2">
                         {/* Info badges */}
                         <div className="flex flex-wrap gap-2">
-                            {['View only', 'No login needed', 'Real-time progress'].map(label => (
+                            {[(accessLevel === 'editor' ? 'Edit tasks' : 'View only'), 'No login needed', 'Real-time progress'].map(label => (
                                 <span
                                     key={label}
                                     className="text-xs px-2.5 py-1 rounded-full bg-primary/10 text-primary border border-primary/20 font-medium"
@@ -181,6 +205,23 @@ export function ShareProjectDialog({ project }: ShareProjectDialogProps) {
                                                 </>
                                             )}
                                         </Button>
+                                    </div>
+
+                                    {/* Link settings */}
+                                    <div className="flex items-center justify-between py-1">
+                                        <div className="flex items-center gap-2">
+                                            <Shield className="h-4 w-4 text-muted-foreground" />
+                                            <span className="text-sm font-medium">Access Level</span>
+                                        </div>
+                                        <Select value={accessLevel} onValueChange={handleUpdateAccessLevel}>
+                                            <SelectTrigger className="w-[120px] h-8 text-xs">
+                                                <SelectValue placeholder="Access Level" />
+                                            </SelectTrigger>
+                                            <SelectContent>
+                                                <SelectItem value="viewer">Viewer</SelectItem>
+                                                <SelectItem value="editor">Editor</SelectItem>
+                                            </SelectContent>
+                                        </Select>
                                     </div>
 
                                     {/* Revoke */}

@@ -8,9 +8,11 @@ import { Badge } from '@/components/ui/badge';
 import { motion } from 'framer-motion';
 import {
     Globe, Calendar, Search, Loader2, Lock, Settings, FileText, PenTool,
-    ExternalLink, MapPin, BarChart3, Clock, LayoutDashboard, AlertTriangle
+    ExternalLink, MapPin, BarChart3, Clock, LayoutDashboard, AlertTriangle, ShieldAlert
 } from 'lucide-react';
 import { format } from 'date-fns';
+import { TaskCard } from '@/components/TaskCard';
+import { toast } from 'sonner';
 
 const iconMap: Record<string, React.ReactNode> = {
     Settings: <Settings className="h-4 w-4" />,
@@ -51,6 +53,8 @@ export default function SharedProjectPage() {
     const [loading, setLoading] = useState(true);
     const [notFound, setNotFound] = useState(false);
     const [activeView, setActiveView] = useState<ViewMode>('dashboard');
+    const [accessLevel, setAccessLevel] = useState<'viewer' | 'editor'>('viewer');
+    const [ownerId, setOwnerId] = useState<string>('');
 
     useEffect(() => {
         if (!token) { setNotFound(true); setLoading(false); return; }
@@ -63,13 +67,15 @@ export default function SharedProjectPage() {
             // 1. Resolve the token → project_id
             const { data: link, error: linkErr } = await supabase
                 .from('share_links')
-                .select('project_id')
+                .select('project_id, access_level, user_id')
                 .eq('token', token!)
                 .maybeSingle();
 
             if (linkErr || !link) { setNotFound(true); return; }
 
             const projectId = link.project_id;
+            setAccessLevel(link.access_level as 'viewer' | 'editor' || 'viewer');
+            setOwnerId(link.user_id);
 
             // 2. Load project
             const { data: proj } = await supabase
@@ -143,6 +149,71 @@ export default function SharedProjectPage() {
         notStarted: tasks.filter(t => t.status === 'not-started').length,
         skipped: tasks.filter(t => t.status === 'skipped').length,
     }), [tasks]);
+
+    const updateSharedTask = async (taskId: string, updates: Partial<SEOTask>) => {
+        if (accessLevel !== 'editor') return;
+
+        // Optimistic UI update
+        setTasks(prev => prev.map(t => t.id === taskId ? { ...t, ...updates } : t));
+
+        const dbUpdates: any = {};
+        if (updates.status !== undefined) dbUpdates.status = updates.status;
+        if (updates.notes !== undefined) dbUpdates.notes = updates.notes;
+        if (updates.proofUrl !== undefined) dbUpdates.proof_url = updates.proofUrl;
+        if (updates.timeSpentMinutes !== undefined) dbUpdates.time_spent_minutes = updates.timeSpentMinutes;
+        if (updates.completionDate !== undefined) dbUpdates.completion_date = updates.completionDate;
+        if (updates.attachments !== undefined) dbUpdates.attachments = updates.attachments;
+
+        try {
+            if (Object.keys(dbUpdates).length > 0) {
+                const { error } = await supabase.from('seo_tasks').update(dbUpdates).eq('id', taskId);
+                if (error) throw error;
+            }
+
+            if (updates.status) {
+                const task = tasks.find(t => t.id === taskId);
+                if (task && task.status !== updates.status) {
+                    await supabase.from('task_history').insert({
+                        user_id: ownerId,
+                        task_id: taskId,
+                        task_title: task.title,
+                        category: task.category,
+                        old_status: task.status,
+                        new_status: updates.status,
+                        changed_by: 'Public Editor',
+                        notes: updates.notes || ''
+                    });
+
+                    // Reload history to show the timeline correctly
+                    const { data: histData } = await supabase
+                        .from('task_history')
+                        .select('*')
+                        .eq('task_id', taskId)
+                        .order('change_date', { ascending: false });
+
+                    if (histData) {
+                        setHistory(prev => {
+                            const newHistData = histData.map((h: any) => ({
+                                id: h.id, taskId: h.task_id, taskTitle: h.task_title,
+                                category: h.category as SEOCategory, oldStatus: h.old_status as TaskStatus,
+                                newStatus: h.new_status as TaskStatus, changedBy: h.changed_by,
+                                changeDate: h.change_date, notes: h.notes,
+                            }));
+                            const combined = [...prev, ...newHistData];
+                            // Remove duplicates by ID and sort
+                            return Array.from(new Map(combined.map(item => [item.id, item])).values())
+                                .sort((a, b) => new Date(b.changeDate).getTime() - new Date(a.changeDate).getTime());
+                        });
+                    }
+                }
+            }
+        } catch (err) {
+            console.error("Failed to update task", err);
+            toast.error("Failed to save changes.");
+            // Revert on error by reloading entirely
+            loadSharedData();
+        }
+    };
 
     const navItems = [
         { id: 'dashboard' as ViewMode, label: 'Dashboard', icon: <LayoutDashboard className="h-4 w-4" /> },
@@ -249,7 +320,16 @@ export default function SharedProjectPage() {
                             </div>
                             <div className="space-y-2">
                                 {highPriorityPending.map(task => (
-                                    <ReadOnlyTaskRow key={task.id} task={task} />
+                                    accessLevel === 'editor' ? (
+                                        <TaskCard
+                                            key={task.id}
+                                            task={task}
+                                            onUpdate={updateSharedTask}
+                                            onUploadAttachment={async () => { toast.error("File upload is only supported for account holders."); return null; }}
+                                        />
+                                    ) : (
+                                        <ReadOnlyTaskRow key={task.id} task={task} />
+                                    )
                                 ))}
                             </div>
                         </div>
@@ -295,7 +375,16 @@ export default function SharedProjectPage() {
                 ) : (
                     <div className="space-y-2">
                         {catTasks.map(task => (
-                            <ReadOnlyTaskRow key={task.id} task={task} />
+                            accessLevel === 'editor' ? (
+                                <TaskCard
+                                    key={task.id}
+                                    task={task}
+                                    onUpdate={updateSharedTask}
+                                    onUploadAttachment={async () => { toast.error("File upload is only supported for account holders."); return null; }}
+                                />
+                            ) : (
+                                <ReadOnlyTaskRow key={task.id} task={task} />
+                            )
                         ))}
                     </div>
                 )}
@@ -315,22 +404,28 @@ export default function SharedProjectPage() {
                         <h1 className="text-sm font-bold text-foreground truncate">{project.name}</h1>
                         <p className="text-xs text-muted-foreground">{project.domain}</p>
                     </div>
-                    <Badge variant="outline" className="hidden sm:flex border-primary/30 text-primary gap-1.5">
-                        <Lock className="h-3 w-3" />
-                        Read-Only View
-                    </Badge>
+                    {accessLevel === 'editor' ? (
+                        <Badge variant="outline" className="hidden sm:flex border-warning/30 text-warning gap-1.5">
+                            <ShieldAlert className="h-3 w-3" />
+                            Editor View
+                        </Badge>
+                    ) : (
+                        <Badge variant="outline" className="hidden sm:flex border-primary/30 text-primary gap-1.5">
+                            <Lock className="h-3 w-3" />
+                            Read-Only View
+                        </Badge>
+                    )}
                     {project.industry && (
                         <Badge variant="outline" className="hidden sm:flex">{project.industry}</Badge>
                     )}
                 </div>
             </header>
 
-            {/* Read-only banner */}
-            <div className="bg-primary/5 border-b border-primary/10">
+            <div className={`border-b ${accessLevel === 'editor' ? 'bg-warning/5 border-warning/10' : 'bg-primary/5 border-primary/10'}`}>
                 <div className="max-w-[1600px] mx-auto px-4 sm:px-6 py-2.5 flex items-center justify-between gap-2">
                     <p className="text-xs text-muted-foreground flex items-center gap-1.5">
-                        <Lock className="h-3 w-3" />
-                        You're viewing a shared project — <strong className="text-foreground">read-only</strong>.
+                        {accessLevel === 'editor' ? <ShieldAlert className="h-3 w-3 text-warning" /> : <Lock className="h-3 w-3" />}
+                        You're viewing a shared project — <strong className="text-foreground">{accessLevel === 'editor' ? 'editor mode' : 'read-only'}</strong>.
                         {project.clientName && <span>Client: <strong className="text-foreground">{project.clientName}</strong></span>}
                     </p>
                     <div className="flex items-center gap-2 text-xs text-muted-foreground">
@@ -352,8 +447,8 @@ export default function SharedProjectPage() {
                                 key={item.id}
                                 onClick={() => setActiveView(item.id)}
                                 className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition-all ${activeView === item.id
-                                        ? 'bg-primary/10 text-primary font-medium'
-                                        : 'text-muted-foreground hover:text-foreground hover:bg-secondary/50'
+                                    ? 'bg-primary/10 text-primary font-medium'
+                                    : 'text-muted-foreground hover:text-foreground hover:bg-secondary/50'
                                     }`}
                             >
                                 {item.icon}
@@ -374,8 +469,8 @@ export default function SharedProjectPage() {
                                 key={item.id}
                                 onClick={() => setActiveView(item.id)}
                                 className={`flex items-center gap-2 px-3 py-2 rounded-lg text-xs whitespace-nowrap transition-all ${activeView === item.id
-                                        ? 'bg-primary/10 text-primary font-medium'
-                                        : 'text-muted-foreground'
+                                    ? 'bg-primary/10 text-primary font-medium'
+                                    : 'text-muted-foreground'
                                     }`}
                             >
                                 {item.icon}
@@ -410,9 +505,9 @@ function ReadOnlyTaskRow({ task }: { task: SEOTask }) {
             >
                 {/* Status indicator */}
                 <div className={`mt-0.5 flex-shrink-0 w-2.5 h-2.5 rounded-full border ${task.status === 'done' ? 'bg-success border-success' :
-                        task.status === 'in-progress' ? 'bg-info border-info' :
-                            task.status === 'skipped' ? 'bg-muted border-muted-foreground/30' :
-                                'border-muted-foreground/40 bg-transparent'
+                    task.status === 'in-progress' ? 'bg-info border-info' :
+                        task.status === 'skipped' ? 'bg-muted border-muted-foreground/30' :
+                            'border-muted-foreground/40 bg-transparent'
                     }`} />
                 <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 flex-wrap">

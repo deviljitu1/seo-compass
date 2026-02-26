@@ -16,6 +16,7 @@ export type Database = {
     Tables: {
       share_links: {
         Row: {
+          access_level: string | null
           created_at: string
           id: string
           project_id: string
@@ -23,6 +24,7 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          access_level?: string | null
           created_at?: string
           id?: string
           project_id: string
@@ -30,6 +32,7 @@ export type Database = {
           user_id: string
         }
         Update: {
+          access_level?: string | null
           created_at?: string
           id?: string
           project_id?: string
