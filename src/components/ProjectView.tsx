@@ -9,9 +9,10 @@ import { SEOChatbot } from '@/components/SEOChatbot';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { SEOReportExport } from '@/components/SEOReportExport';
 import { ShareProjectDialog } from '@/components/ShareProjectDialog';
 import { Settings, FileText, PenTool, ExternalLink, MapPin, BarChart3, Clock, ArrowLeft, LayoutDashboard, Filter, AlertTriangle } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { ExportReportDialog } from '@/components/ExportReportDialog';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ExportReportDialog } from '@/components/ExportReportDialog';
 
@@ -229,9 +230,8 @@ export function ProjectView({ project, onBack }: ProjectViewProps) {
             <h1 className="text-sm font-bold text-foreground truncate">{project.name}</h1>
             <p className="text-xs text-muted-foreground">{project.domain}</p>
           </div>
-          <SEOReportExport project={project} tasks={projectTasks} history={projectHistory} score={score} />
           <Badge variant="outline" className="hidden sm:flex">{project.industry || 'General'}</Badge>
-          <ExportReportDialog project={project} />
+          <ExportReportDialog project={project} tasks={projectTasks} history={projectHistory} score={score} />
           {/* Share button — only for logged-in users (cloud projects) */}
           {user && <ShareProjectDialog project={project} />}
         </div>
@@ -250,8 +250,8 @@ export function ProjectView({ project, onBack }: ProjectViewProps) {
                 key={item.id}
                 onClick={() => { setActiveView(item.id); setFilterImpact('all'); setFilterStatus('all'); }}
                 className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition-all ${activeView === item.id
-                    ? 'bg-primary/10 text-primary font-medium'
-                    : 'text-muted-foreground hover:text-foreground hover:bg-secondary/50'
+                  ? 'bg-primary/10 text-primary font-medium'
+                  : 'text-muted-foreground hover:text-foreground hover:bg-secondary/50'
                   }`}
               >
                 {item.icon}
@@ -272,8 +272,8 @@ export function ProjectView({ project, onBack }: ProjectViewProps) {
                 key={item.id}
                 onClick={() => { setActiveView(item.id); setFilterImpact('all'); setFilterStatus('all'); }}
                 className={`flex items-center gap-2 px-3 py-2 rounded-lg text-xs whitespace-nowrap transition-all ${activeView === item.id
-                    ? 'bg-primary/10 text-primary font-medium'
-                    : 'text-muted-foreground'
+                  ? 'bg-primary/10 text-primary font-medium'
+                  : 'text-muted-foreground'
                   }`}
               >
                 {item.icon}
