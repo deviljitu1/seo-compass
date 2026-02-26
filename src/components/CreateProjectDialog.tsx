@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -50,6 +50,9 @@ export function CreateProjectDialog({ open, onOpenChange, onCreateProject }: Cre
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
           <DialogTitle>Create SEO Project</DialogTitle>
+          <DialogDescription className="sr-only">
+            Fill out the form below to set up a new SEO project.
+          </DialogDescription>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="space-y-2">
