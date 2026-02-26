@@ -35,6 +35,7 @@ export function ProjectView({ project, onBack }: ProjectViewProps) {
   const [activeView, setActiveView] = useState<ViewMode>('dashboard');
   const [filterImpact, setFilterImpact] = useState<Impact | 'all'>('all');
   const [filterStatus, setFilterStatus] = useState<TaskStatus | 'all'>('all');
+  const { user } = useAuth();
   const { getProjectTasks, getProjectHistory, getProjectScore, getStats, updateTask, uploadAttachment, deleteAttachment, tasks: allTasks, history: allHistory } = useSEOStore();
 
   const projectTasks = allTasks.filter(t => t.projectId === project.id);
@@ -231,90 +232,69 @@ export function ProjectView({ project, onBack }: ProjectViewProps) {
           <SEOReportExport project={project} tasks={projectTasks} history={projectHistory} score={score} />
           <Badge variant="outline" className="hidden sm:flex">{project.industry || 'General'}</Badge>
           <ExportReportDialog project={project} />
+          {/* Share button — only for logged-in users (cloud projects) */}
+          {user && <ShareProjectDialog project={project} />}
         </div>
       </header>
 
       <div className="max-w-[1600px] mx-auto flex">
         {/* Sidebar */}
         <aside className="hidden md:block w-56 lg:w-64 border-r border-border/50 min-h-[calc(100vh-3.5rem)] p-3 space-y-1 sticky top-14 self-start">
-<<<<<<< Updated upstream
-  {
-    navItems.map(item => {
-      const isCategory = item.id !== 'dashboard' && item.id !== 'timeline';
-      const catTasks = isCategory ? getProjectTasks(project.id, item.id as SEOCategory) : [];
-      const catDone = catTasks.filter(t => t.status === 'done').length;
+          {navItems.map(item => {
+            const isCategory = item.id !== 'dashboard' && item.id !== 'timeline';
+            const catTasks = isCategory ? getProjectTasks(project.id, item.id as SEOCategory) : [];
+            const catDone = catTasks.filter(t => t.status === 'done').length;
 
-      return (
-        <button
-          key={item.id}
-          onClick={() => { setActiveView(item.id); setFilterImpact('all'); setFilterStatus('all'); }}
-          className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition-all ${activeView === item.id
-              ? 'bg-primary/10 text-primary font-medium'
-              : 'text-muted-foreground hover:text-foreground hover:bg-secondary/50'
-            }`}
-        >
-          {item.icon}
-          <span className="flex-1 text-left">{item.label}</span>
-          {isCategory && (
-            <span className="text-xs opacity-60">{catDone}/{catTasks.length}</span>
-          )}
-        </button>
-      );
-    })
-  }
-=======
-          {navItems.map(item => (
-            <button
-              key={item.id}
-              onClick={() => setActiveView(item.id)}
-              className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition-all ${activeView === item.id
-                  ? 'bg-primary/10 text-primary font-medium'
-                  : 'text-muted-foreground hover:text-foreground hover:bg-secondary/50'
-                }`}
-            >
-              {item.icon}
-              {item.label}
-            </button>
-          ))}
->>>>>>> Stashed changes
-        </aside >
+            return (
+              <button
+                key={item.id}
+                onClick={() => { setActiveView(item.id); setFilterImpact('all'); setFilterStatus('all'); }}
+                className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition-all ${activeView === item.id
+                    ? 'bg-primary/10 text-primary font-medium'
+                    : 'text-muted-foreground hover:text-foreground hover:bg-secondary/50'
+                  }`}
+              >
+                {item.icon}
+                <span className="flex-1 text-left">{item.label}</span>
+                {isCategory && (
+                  <span className="text-xs opacity-60">{catDone}/{catTasks.length}</span>
+                )}
+              </button>
+            );
+          })}
+        </aside>
 
-    {/* Mobile nav */ }
-    < div className = "md:hidden sticky top-14 z-40 bg-background border-b border-border/50 overflow-x-auto" >
-      <div className="flex gap-1 p-2">
-        {navItems.map(item => (
-          <button
-            key={item.id}
-<<<<<<< Updated upstream
-            onClick={() => { setActiveView(item.id); setFilterImpact('all'); setFilterStatus('all'); }}
-            className={`flex items-center gap-2 px-3 py-2 rounded-lg text-xs whitespace-nowrap transition-all ${activeView === item.id
-=======
-                onClick={() => setActiveView(item.id)}
+        {/* Mobile nav */}
+        <div className="md:hidden sticky top-14 z-40 bg-background border-b border-border/50 overflow-x-auto">
+          <div className="flex gap-1 p-2">
+            {navItems.map(item => (
+              <button
+                key={item.id}
+                onClick={() => { setActiveView(item.id); setFilterImpact('all'); setFilterStatus('all'); }}
                 className={`flex items-center gap-2 px-3 py-2 rounded-lg text-xs whitespace-nowrap transition-all ${activeView === item.id
->>>>>>> Stashed changes
-                ? 'bg-primary/10 text-primary font-medium'
-                : 'text-muted-foreground'
-              }`}
-          >
-            {item.icon}
-            {item.label}
-          </button>
-        ))}
+                    ? 'bg-primary/10 text-primary font-medium'
+                    : 'text-muted-foreground'
+                  }`}
+              >
+                {item.icon}
+                {item.label}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* Main content */}
+        <main className="flex-1 p-4 sm:p-6 lg:p-8 min-w-0">
+          {renderContent()}
+        </main>
       </div>
-        </div >
 
-    {/* Main content */ }
-    < main className = "flex-1 p-4 sm:p-6 lg:p-8 min-w-0" >
-      { renderContent() }
-        </main >
-      </div >
-
-    <SEOChatbot
-      project={project}
-      tasks={projectTasks}
-      history={projectHistory}
-      score={score}
-    />
-    </div >
+      <SEOChatbot
+        project={project}
+        tasks={projectTasks}
+        history={projectHistory}
+        score={score}
+      />
+    </div>
   );
 }
