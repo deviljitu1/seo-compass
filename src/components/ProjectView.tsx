@@ -1,6 +1,7 @@
 import { useState, useMemo } from 'react';
 import { SEOProject, SEOCategory, CATEGORIES, TaskStatus, Impact } from '@/types/seo';
 import { useSEOStore } from '@/stores/seoStore';
+import { useAuth } from '@/contexts/AuthContext';
 import { SEOScoreCircle } from '@/components/SEOScoreCircle';
 import { TaskCard } from '@/components/TaskCard';
 import { TimelineView } from '@/components/TimelineView';
@@ -9,6 +10,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { SEOReportExport } from '@/components/SEOReportExport';
+import { ShareProjectDialog } from '@/components/ShareProjectDialog';
 import { Settings, FileText, PenTool, ExternalLink, MapPin, BarChart3, Clock, ArrowLeft, LayoutDashboard, Filter, AlertTriangle } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ExportReportDialog } from '@/components/ExportReportDialog';
@@ -236,29 +238,30 @@ export function ProjectView({ project, onBack }: ProjectViewProps) {
         {/* Sidebar */}
         <aside className="hidden md:block w-56 lg:w-64 border-r border-border/50 min-h-[calc(100vh-3.5rem)] p-3 space-y-1 sticky top-14 self-start">
 <<<<<<< Updated upstream
-          {navItems.map(item => {
-            const isCategory = item.id !== 'dashboard' && item.id !== 'timeline';
-            const catTasks = isCategory ? getProjectTasks(project.id, item.id as SEOCategory) : [];
-            const catDone = catTasks.filter(t => t.status === 'done').length;
+  {
+    navItems.map(item => {
+      const isCategory = item.id !== 'dashboard' && item.id !== 'timeline';
+      const catTasks = isCategory ? getProjectTasks(project.id, item.id as SEOCategory) : [];
+      const catDone = catTasks.filter(t => t.status === 'done').length;
 
-            return (
-              <button
-                key={item.id}
-                onClick={() => { setActiveView(item.id); setFilterImpact('all'); setFilterStatus('all'); }}
-                className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition-all ${
-                  activeView === item.id
-                    ? 'bg-primary/10 text-primary font-medium'
-                    : 'text-muted-foreground hover:text-foreground hover:bg-secondary/50'
-                }`}
-              >
-                {item.icon}
-                <span className="flex-1 text-left">{item.label}</span>
-                {isCategory && (
-                  <span className="text-xs opacity-60">{catDone}/{catTasks.length}</span>
-                )}
-              </button>
-            );
-          })}
+      return (
+        <button
+          key={item.id}
+          onClick={() => { setActiveView(item.id); setFilterImpact('all'); setFilterStatus('all'); }}
+          className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition-all ${activeView === item.id
+              ? 'bg-primary/10 text-primary font-medium'
+              : 'text-muted-foreground hover:text-foreground hover:bg-secondary/50'
+            }`}
+        >
+          {item.icon}
+          <span className="flex-1 text-left">{item.label}</span>
+          {isCategory && (
+            <span className="text-xs opacity-60">{catDone}/{catTasks.length}</span>
+          )}
+        </button>
+      );
+    })
+  }
 =======
           {navItems.map(item => (
             <button
@@ -274,45 +277,44 @@ export function ProjectView({ project, onBack }: ProjectViewProps) {
             </button>
           ))}
 >>>>>>> Stashed changes
-        </aside>
+        </aside >
 
-        {/* Mobile nav */}
-        <div className="md:hidden sticky top-14 z-40 bg-background border-b border-border/50 overflow-x-auto">
-          <div className="flex gap-1 p-2">
-            {navItems.map(item => (
-              <button
-                key={item.id}
+    {/* Mobile nav */ }
+    < div className = "md:hidden sticky top-14 z-40 bg-background border-b border-border/50 overflow-x-auto" >
+      <div className="flex gap-1 p-2">
+        {navItems.map(item => (
+          <button
+            key={item.id}
 <<<<<<< Updated upstream
-                onClick={() => { setActiveView(item.id); setFilterImpact('all'); setFilterStatus('all'); }}
-                className={`flex items-center gap-2 px-3 py-2 rounded-lg text-xs whitespace-nowrap transition-all ${
-                  activeView === item.id
+            onClick={() => { setActiveView(item.id); setFilterImpact('all'); setFilterStatus('all'); }}
+            className={`flex items-center gap-2 px-3 py-2 rounded-lg text-xs whitespace-nowrap transition-all ${activeView === item.id
 =======
                 onClick={() => setActiveView(item.id)}
                 className={`flex items-center gap-2 px-3 py-2 rounded-lg text-xs whitespace-nowrap transition-all ${activeView === item.id
 >>>>>>> Stashed changes
-                    ? 'bg-primary/10 text-primary font-medium'
-                    : 'text-muted-foreground'
-                  }`}
-              >
-                {item.icon}
-                {item.label}
-              </button>
-            ))}
-          </div>
-        </div>
-
-        {/* Main content */}
-        <main className="flex-1 p-4 sm:p-6 lg:p-8 min-w-0">
-          {renderContent()}
-        </main>
+                ? 'bg-primary/10 text-primary font-medium'
+                : 'text-muted-foreground'
+              }`}
+          >
+            {item.icon}
+            {item.label}
+          </button>
+        ))}
       </div>
+        </div >
 
-      <SEOChatbot
-        project={project}
-        tasks={projectTasks}
-        history={projectHistory}
-        score={score}
-      />
-    </div>
+    {/* Main content */ }
+    < main className = "flex-1 p-4 sm:p-6 lg:p-8 min-w-0" >
+      { renderContent() }
+        </main >
+      </div >
+
+    <SEOChatbot
+      project={project}
+      tasks={projectTasks}
+      history={projectHistory}
+      score={score}
+    />
+    </div >
   );
 }
